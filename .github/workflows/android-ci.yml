@@ -2,7 +2,8 @@ name: Android CI
 
 on:
   push:
-    branches: [ 'master' ]
+    # Run on master and on feature branches to validate PRs early
+    branches: [ 'master', 'feat/**' ]
   pull_request:
     branches: [ 'master' ]
 
@@ -13,6 +14,24 @@ jobs:
       ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-cache-${{ runner.os }}-$(hashFiles('**/*.gradle*','**/gradle-wrapper.properties'))
+          restore-keys: |
+            gradle-cache-${{ runner.os }}-
+
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}
+          key: android-sdk-${{ runner.os }}-33
+          restore-keys: |
+            android-sdk-${{ runner.os }}-
 
       - name: Check index.html is present
         run: |
@@ -56,7 +75,7 @@ jobs:
 
           # Build with wrapper if available
           if [ -f ./gradlew ]; then
-            ./gradlew assembleDebug --no-daemon
+            ./gradlew assembleDebug --no-daemon --stacktrace
           else
             echo "Gradle wrapper not found and could not be generated. Ensure gradle or wrapper is present.";
             exit 1
