@@ -6,7 +6,8 @@ ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 ENV PATH=$PATH:/opt/gradle/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-11-jdk wget unzip curl git ca-certificates zip unzip && \
+    openjdk-11-jdk wget unzip curl git ca-certificates zip unzip \
+    lib32stdc++6 lib32z1 libc6-i386 && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Gradle (binary distribution)
@@ -27,10 +28,30 @@ RUN mkdir -p ${ANDROID_SDK_ROOT} && \
     mv ${ANDROID_SDK_ROOT}/cmdline-tools-temp/cmdline-tools ${ANDROID_SDK_ROOT}/cmdline-tools/latest || true && \
     rm -rf ${ANDROID_SDK_ROOT}/cmdline-tools-temp
 
-# Ensure JAVA_HOME is set for sdkmanager and accept licenses, then install platform tools and build-tools
-RUN export JAVA_HOME=${JAVA_HOME} && \
-    yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses || true && \
-    ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --verbose "platform-tools" "platforms;33" "build-tools;33.0.2"
+ENV ANDROID_HOME=${ANDROID_SDK_ROOT}
+
+# Ensure JAVA_HOME is set for sdkmanager; add diagnostics and retry installation to reduce transient failures
+RUN echo "[docker] java version:" && java -version || true && \
+    echo "[docker] ANDROID_SDK_ROOT contents before sdkmanager:" && ls -la ${ANDROID_SDK_ROOT} || true && \
+    echo "[docker] sdkmanager path exists?" && ls -la ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin || true && \
+    echo "[docker] sdkmanager --version:" && ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --version || true && \
+    echo "[docker] environment vars:" && env || true && \
+    echo "[docker] connectivity test to dl.google.com:" && curl -I https://dl.google.com || true
+
+RUN set -e; \
+        export JAVA_HOME=${JAVA_HOME}; \
+        ATTEMPTS=0; \
+        until [ $ATTEMPTS -ge 3 ]; do \
+            echo "[docker] accepting licenses (attempt $((ATTEMPTS+1)))"; \
+            yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses && break || true; \
+            ATTEMPTS=$((ATTEMPTS+1)); sleep 3; \
+        done; \
+        ATTEMPTS=0; \
+        until [ $ATTEMPTS -ge 3 ]; do \
+            echo "[docker] installing platform-tools/platforms/build-tools (attempt $((ATTEMPTS+1)))"; \
+            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --verbose "platform-tools" "platforms;33" "build-tools;33.0.2" && break || true; \
+            ATTEMPTS=$((ATTEMPTS+1)); sleep 5; \
+        done
 
 # Create workspace dir
 WORKDIR /workspace
