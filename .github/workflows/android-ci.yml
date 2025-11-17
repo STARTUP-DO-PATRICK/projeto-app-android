@@ -7,8 +7,10 @@ on:
     branches: [ 'master' ]
 
 jobs:
-  simple-checks:
+  build-android:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: ${{ runner.temp }}/android-sdk
     steps:
       - uses: actions/checkout@v4
 
@@ -17,13 +19,45 @@ jobs:
           if [ ! -f index.html ]; then echo "Missing index.html"; exit 1; fi
           grep -n "Projeto Android" index.html || true
 
-      - name: Set up Node (for HTML lint)
-        uses: actions/setup-node@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
         with:
-          node-version: '18'
+          distribution: temurin
+          java-version: '11'
 
-      - name: Install HTML linter
-        run: npm install -g htmlhint
+      - name: Install SDKMAN and Gradle (fallback)
+        run: |
+          # Install SDKMAN to get Gradle if wrapper isn't present
+          if [ ! -f ./gradlew ]; then
+            curl -s "https://get.sdkman.io" | bash
+            source "$HOME/.sdkman/bin/sdkman-init.sh"
+            sdk install gradle 8.2.1
+          fi
 
-      - name: Lint HTML (index.html)
-        run: htmlhint index.html
+      - name: Install Android command-line tools and SDK
+        uses: r0adkll/setup-android@v2
+        with:
+          api-levels: '33'
+          build-tools: '33.0.2'
+          components: 'platform-tools'
+
+      - name: Make gradlew executable
+        run: |
+          if [ -f ./gradlew ]; then chmod +x ./gradlew; fi
+
+      - name: Ensure wrapper and build
+        run: |
+          # If wrapper jar is missing but gradle is available, generate wrapper
+          if [ -f ./gradlew ] && [ ! -f ./gradle/wrapper/gradle-wrapper.jar ]; then
+            if command -v gradle >/dev/null 2>&1; then
+              gradle wrapper --gradle-version 8.2.1
+            fi
+          fi
+
+          # Build with wrapper if available
+          if [ -f ./gradlew ]; then
+            ./gradlew assembleDebug --no-daemon
+          else
+            echo "Gradle wrapper not found and could not be generated. Ensure gradle or wrapper is present.";
+            exit 1
+          fi
