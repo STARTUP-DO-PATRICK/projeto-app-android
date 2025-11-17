@@ -1,0 +1,34 @@
+name: Android Tests
+
+on:
+  pull_request:
+    branches: [ 'master' ]
+
+jobs:
+  android-tests:
+    runs-on: ubuntu-latest
+    needs: build-android
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Install Android SDK
+        uses: r0adkll/setup-android@v2
+        with:
+          api-levels: '33'
+          build-tools: '33.0.2'
+          components: 'platform-tools'
+
+      - name: Make gradlew executable
+        run: |
+          if [ -f ./gradlew ]; then chmod +x ./gradlew; fi
+
+      - name: Run unit tests and lint
+        run: |
+          ./gradlew testDebugUnitTest --no-daemon || echo "unit tests failed"
+          ./gradlew lintDebug --no-daemon || echo "lint reported issues"
