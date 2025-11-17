@@ -7,7 +7,7 @@ ENV PATH=$PATH:/opt/gradle/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDRO
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openjdk-11-jdk wget unzip curl git ca-certificates zip unzip \
-    lib32stdc++6 lib32z1 libc6-i386 && \
+    lib32stdc++6 lib32z1 libc6-i386 lib32gcc-s1 libncurses6 libncurses5 && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Gradle (binary distribution)
@@ -39,17 +39,18 @@ RUN echo "[docker] java version:" && java -version || true && \
     echo "[docker] connectivity test to dl.google.com:" && curl -I https://dl.google.com || true
 
 RUN set -e; \
-        export JAVA_HOME=${JAVA_HOME}; \
+        export JAVA_HOME=${JAVA_HOME}; export ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}; \
+        echo "[docker] ensure sdkmanager is executable"; chmod -R a+rx ${ANDROID_SDK_ROOT}/cmdline-tools || true; \
         ATTEMPTS=0; \
         until [ $ATTEMPTS -ge 3 ]; do \
             echo "[docker] accepting licenses (attempt $((ATTEMPTS+1)))"; \
-            yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses && break || true; \
+            yes | ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --licenses 2>&1 | sed -n '1,200p' && break || true; \
             ATTEMPTS=$((ATTEMPTS+1)); sleep 3; \
         done; \
         ATTEMPTS=0; \
         until [ $ATTEMPTS -ge 3 ]; do \
             echo "[docker] installing platform-tools/platforms/build-tools (attempt $((ATTEMPTS+1)))"; \
-            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --verbose "platform-tools" "platforms;33" "build-tools;33.0.2" && break || true; \
+            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --verbose "platform-tools" "platforms;33" "build-tools;33.0.2" 2>&1 | sed -n '1,400p' && break || true; \
             ATTEMPTS=$((ATTEMPTS+1)); sleep 5; \
         done
 
