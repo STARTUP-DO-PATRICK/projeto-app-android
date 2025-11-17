@@ -12,5 +12,7 @@ build/
 .gradle/
 .gradle
 /gradle/
-/gradlew
-/gradlew.bat
+# Gradle wrapper scripts & jar should be committed for reproducible builds and CI
+!gradlew
+!gradlew.bat
+!gradle/wrapper/gradle-wrapper.jar

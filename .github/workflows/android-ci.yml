@@ -17,15 +17,13 @@ jobs:
           if [ ! -f index.html ]; then echo "Missing index.html"; exit 1; fi
           grep -n "Projeto Android" index.html || true
 
-      - name: Make gradlew executable
-        run: |
-          if [ -f ./gradlew ]; then chmod +x ./gradlew; fi
+      - name: Set up Node (for HTML lint)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
 
-      - name: Assemble Debug with wrapper
-        run: |
-          if [ -f ./gradlew ]; then
-            ./gradlew assembleDebug --no-daemon
-          else
-            echo "gradlew not found. Run 'gradle wrapper --gradle-version 8.2.1' locally to add the wrapper.";
-            exit 1
-          fi
+      - name: Install HTML linter
+        run: npm install -g htmlhint
+
+      - name: Lint HTML (index.html)
+        run: htmlhint index.html

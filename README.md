@@ -33,8 +33,8 @@ gradle assembleDebug
   - `app/build.gradle` — module Gradle config
 
 ## CI
-- `.github/workflows/android-ci.yml` — now uses the Gradle wrapper and fails the CI if the wrapper isn't present in the repo so PRs always compile.
-  - Add the wrapper locally with `gradle wrapper --gradle-version 8.2.1` and commit the generated wrapper files (`gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar`, `gradle/wrapper/gradle-wrapper.properties`) so CI can build.
+- `.github/workflows/android-ci.yml` — runs a light check on `index.html` with `htmlhint` so PRs validate the public dashboard without requiring Android SDK in CI.
+  - If you want the workflow to compile the Android module, add the Gradle wrapper `gradle/wrapper/gradle-wrapper.jar` and update the workflow to install Android SDK on the runner or use a dedicated Android action.
 
 ## Contributing
 - Follow Portuguese for UI text and `index.html` changes unless localization is added.

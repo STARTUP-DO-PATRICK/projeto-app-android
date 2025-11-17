@@ -28,8 +28,8 @@ Purpose: Help AI coding agents be productive by documenting the repository state
        - Import the project in Android Studio (recommended) and click Run.
        - Or install Gradle and run (PowerShell):
           `gradle assembleDebug`
-      - Once present, `./gradlew assembleDebug` is preferred; CI in `.github/workflows/android-ci.yml` now uses the Gradle wrapper and will fail if the wrapper is missing. Add the wrapper locally with `gradle wrapper --gradle-version 8.2.1` and commit the wrapper files (`gradlew`, `gradlew.bat`, and `gradle/wrapper/*`).
-     - For a simple HTML check, use `htmlhint` or run a `link-checker` action.
+      - Once present, `./gradlew assembleDebug` is preferred; CI can be configured to compile Android (by adding the Gradle wrapper JAR and configuring an Android runner). Currently this repo uses an HTML linter so PRs validate `index.html` without requiring Android SDK.
+   - For a simple HTML check, this repo runs `htmlhint index.html` in CI; use `link-checker` or `html-validate` if you want additional link or semantic checks.
 
 6. When to ask for clarification
    - If tasked with creating Android modules: ask about minimum SDK, Kotlin or Java preference, intended API endpoints.
