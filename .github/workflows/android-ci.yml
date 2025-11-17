@@ -1,0 +1,31 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ 'master' ]
+  pull_request:
+    branches: [ 'master' ]
+
+jobs:
+  simple-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check index.html is present
+        run: |
+          if [ ! -f index.html ]; then echo "Missing index.html"; exit 1; fi
+          grep -n "Projeto Android" index.html || true
+
+      - name: Make gradlew executable
+        run: |
+          if [ -f ./gradlew ]; then chmod +x ./gradlew; fi
+
+      - name: Assemble Debug with wrapper
+        run: |
+          if [ -f ./gradlew ]; then
+            ./gradlew assembleDebug --no-daemon
+          else
+            echo "gradlew not found. Run 'gradle wrapper --gradle-version 8.2.1' locally to add the wrapper.";
+            exit 1
+          fi
